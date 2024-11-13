@@ -9,14 +9,23 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { theme } from "@/colors";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+type Todos = {
+  [key: string]: { text: string; working: boolean };
+};
+
+const STORAGE_KEY = "@toDos";
 
 export default function HomeScreen() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
-  const [toDos, setToDos] = useState<{
-    [key: string]: { text: string; work: boolean };
-  }>({});
+  const [toDos, setToDos] = useState<Todos>({});
+
+  useEffect(() => {
+    loadToDos();
+  }, []);
 
   const travel = () => setWorking(false);
   const work = () => setWorking(true);
@@ -25,16 +34,28 @@ export default function HomeScreen() {
     setText(payload);
   };
 
-  const addToDo = () => {
+  const saveToDos = async (toSave: Todos) => {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  };
+
+  const loadToDos = async () => {
+    try {
+      const s = await AsyncStorage.getItem(STORAGE_KEY);
+      setToDos(JSON.parse(s || ""));
+    } catch (e) {}
+  };
+
+  const addToDo = async () => {
     if (text === "") {
       return;
     }
     // save to do
     const newToDos = {
       ...toDos,
-      [Date.now()]: { text, work: working },
+      [Date.now()]: { text, working },
     };
     setToDos(newToDos);
+    await saveToDos(newToDos);
     setText("");
   };
 
@@ -70,11 +91,13 @@ export default function HomeScreen() {
         value={text}
       />
       <ScrollView>
-        {Object.keys(toDos).map((key) => (
-          <View style={styles.toDo} key={key}>
-            <Text style={styles.toDoText}>{toDos[key].text}</Text>
-          </View>
-        ))}
+        {Object.keys(toDos).map((key) =>
+          toDos[key].working === working ? (
+            <View style={styles.toDo} key={key}>
+              <Text style={styles.toDoText}>{toDos[key].text}</Text>
+            </View>
+          ) : null,
+        )}
       </ScrollView>
     </View>
   );
