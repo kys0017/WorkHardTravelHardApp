@@ -7,22 +7,22 @@ import {
   TextInputProps,
   ScrollView,
   Alert,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { theme } from "@/colors";
-import { useEffect, useState } from "react";
-import Fontisto from "@expo/vector-icons/Fontisto";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { theme } from '@/colors';
+import { useEffect, useState } from 'react';
+import Fontisto from '@expo/vector-icons/Fontisto';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Todos = {
   [key: string]: { text: string; working: boolean };
 };
 
-const STORAGE_KEY = "@toDos";
+const STORAGE_KEY = '@toDos';
 
 export default function HomeScreen() {
   const [working, setWorking] = useState(true);
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const [toDos, setToDos] = useState<Todos>({});
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function HomeScreen() {
   const travel = () => setWorking(false);
   const work = () => setWorking(true);
 
-  const onChangeText: TextInputProps["onChangeText"] = (payload) => {
+  const onChangeText: TextInputProps['onChangeText'] = (payload) => {
     setText(payload);
   };
 
@@ -43,12 +43,12 @@ export default function HomeScreen() {
   const loadToDos = async () => {
     try {
       const s = await AsyncStorage.getItem(STORAGE_KEY);
-      setToDos(JSON.parse(s || ""));
+      setToDos(JSON.parse(s || ''));
     } catch (e) {}
   };
 
   const addToDo = async () => {
-    if (text === "") {
+    if (text === '') {
       return;
     }
     // save to do
@@ -58,15 +58,15 @@ export default function HomeScreen() {
     };
     setToDos(newToDos);
     await saveToDos(newToDos);
-    setText("");
+    setText('');
   };
 
   const deleteToDo = (key: string) => {
-    Alert.alert("Delete To Do?", "Are you sure?", [
-      { text: "Cancel" },
+    Alert.alert('Delete To Do?', 'Are you sure?', [
+      { text: 'Cancel' },
       {
         text: "I'm Sure",
-        style: "destructive",
+        style: 'destructive',
         onPress: () => {
           const newToDos = { ...toDos };
           delete newToDos[key];
@@ -83,7 +83,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <TouchableOpacity onPress={work}>
           <Text
-            style={{ ...styles.btnText, color: working ? "white" : theme.grey }}
+            style={{ ...styles.btnText, color: working ? 'white' : theme.grey }}
           >
             Work
           </Text>
@@ -92,7 +92,7 @@ export default function HomeScreen() {
           <Text
             style={{
               ...styles.btnText,
-              color: !working ? "white" : theme.grey,
+              color: !working ? 'white' : theme.grey,
             }}
           >
             Travel
@@ -103,7 +103,7 @@ export default function HomeScreen() {
         onSubmitEditing={addToDo}
         onChangeText={onChangeText}
         returnKeyType="done"
-        placeholder={working ? "Add a To Do" : "Where do you want to go?"}
+        placeholder={working ? 'Add a To Do' : 'Where do you want to go?'}
         placeholderTextColor="grey"
         style={styles.input}
         value={text}
@@ -131,16 +131,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    justifyContent: "space-between",
-    flexDirection: "row",
+    justifyContent: 'space-between',
+    flexDirection: 'row',
     marginTop: 100,
   },
   btnText: {
     fontSize: 38,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   input: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 30,
@@ -153,13 +153,13 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderRadius: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   toDoText: {
-    color: "white",
+    color: 'white',
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
   },
 });
