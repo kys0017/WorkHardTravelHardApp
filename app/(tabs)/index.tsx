@@ -8,6 +8,7 @@ import {
   TextInputProps,
   TouchableOpacity,
   View,
+  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '@/colors';
@@ -113,30 +114,51 @@ export default function HomeScreen() {
   const confirmToUpdateToDoText = (key: string) => {
     if (!toDos[key].modifying) return;
 
-    Alert.alert('Update To Do?', 'Are you sure?', [
-      { text: 'Cancel' },
-      {
-        text: "I'm Sure",
-        style: 'destructive',
-        onPress: () => {
-          setToDos((prevTodos) => {
-            const newToDos = {
-              ...prevTodos,
-              [key]: {
-                ...prevTodos[key],
-                text: !!prevTodos[key].tempText
-                  ? (prevTodos[key].tempText ?? '')
-                  : prevTodos[key].text,
-                modifying: false,
-              },
-            };
-            saveToDos(newToDos);
+    if (Platform.OS === 'web') {
+      const ok = confirm('Do you want to update this To Do?');
+      if (ok) {
+        setToDos((prevTodos) => {
+          const newToDos = {
+            ...prevTodos,
+            [key]: {
+              ...prevTodos[key],
+              text: !!prevTodos[key].tempText
+                ? (prevTodos[key].tempText ?? '')
+                : prevTodos[key].text,
+              modifying: false,
+            },
+          };
+          saveToDos(newToDos);
 
-            return newToDos;
-          });
+          return newToDos;
+        });
+      }
+    } else {
+      Alert.alert('Update To Do?', 'Are you sure?', [
+        { text: 'Cancel' },
+        {
+          text: "I'm Sure",
+          style: 'destructive',
+          onPress: () => {
+            setToDos((prevTodos) => {
+              const newToDos = {
+                ...prevTodos,
+                [key]: {
+                  ...prevTodos[key],
+                  text: !!prevTodos[key].tempText
+                    ? (prevTodos[key].tempText ?? '')
+                    : prevTodos[key].text,
+                  modifying: false,
+                },
+              };
+              saveToDos(newToDos);
+
+              return newToDos;
+            });
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const changeToModifying = (key: string) => {
@@ -163,7 +185,11 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <TouchableOpacity onPress={work}>
           <Text
-            style={{ ...styles.btnText, color: working ? 'white' : theme.grey }}
+            style={{
+              fontSize: 38,
+              fontWeight: '600',
+              color: working ? 'white' : theme.grey,
+            }}
           >
             Work
           </Text>
@@ -171,7 +197,8 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={travel}>
           <Text
             style={{
-              ...styles.btnText,
+              fontSize: 38,
+              fontWeight: '600',
               color: !working ? 'white' : theme.grey,
             }}
           >
@@ -264,10 +291,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     flexDirection: 'row',
     marginTop: 100,
-  },
-  btnText: {
-    fontSize: 38,
-    fontWeight: '600',
   },
   input: {
     backgroundColor: 'white',
