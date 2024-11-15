@@ -1,23 +1,31 @@
 import {
+  Alert,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
   TextInput,
   TextInputProps,
-  ScrollView,
-  Alert,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '@/colors';
 import { useEffect, useState } from 'react';
-import Fontisto from '@expo/vector-icons/Fontisto';
+import { FontAwesome6, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Todos = {
-  [key: string]: { text: string; working: boolean };
+  [key: string]: {
+    text: string;
+    tempText?: string;
+    working?: boolean;
+    done?: boolean;
+    modifying?: boolean;
+  };
 };
 
+const WORKING_MODE = '@working';
 const STORAGE_KEY = '@toDos';
 
 export default function HomeScreen() {
@@ -26,11 +34,30 @@ export default function HomeScreen() {
   const [toDos, setToDos] = useState<Todos>({});
 
   useEffect(() => {
+    loadToWorkingMode();
     loadToDos();
   }, []);
 
-  const travel = () => setWorking(false);
-  const work = () => setWorking(true);
+  useEffect(() => {
+    AsyncStorage.setItem(WORKING_MODE, JSON.stringify(working));
+  }, [working]);
+
+  const travel = async () => {
+    setWorking(false);
+  };
+
+  const work = async () => {
+    setWorking(true);
+  };
+
+  const loadToWorkingMode = async () => {
+    try {
+      const s = await AsyncStorage.getItem(WORKING_MODE);
+      if (!!s) {
+        setWorking(s === 'true');
+      }
+    } catch (e) {}
+  };
 
   const onChangeText: TextInputProps['onChangeText'] = (payload) => {
     setText(payload);
@@ -61,20 +88,73 @@ export default function HomeScreen() {
     setText('');
   };
 
-  const deleteToDo = (key: string) => {
-    Alert.alert('Delete To Do?', 'Are you sure?', [
+  const completeToDo = (key: string) => {
+    setToDos((prevTodos) => {
+      const newToDos = {
+        ...prevTodos,
+        [key]: { ...prevTodos[key], done: !prevTodos[key].done },
+      };
+      saveToDos(newToDos);
+
+      return newToDos;
+    });
+  };
+
+  // modifying 이면 save, modifying false 로 수정.
+  // !modifying 이면 text input 으로 변경
+  const modifyTodo = (key: string) => {
+    if (toDos[key].modifying) {
+      confirmToUpdateToDoText(key);
+    } else {
+      changeToModifying(key);
+    }
+  };
+
+  const confirmToUpdateToDoText = (key: string) => {
+    if (!toDos[key].modifying) return;
+
+    Alert.alert('Update To Do?', 'Are you sure?', [
       { text: 'Cancel' },
       {
         text: "I'm Sure",
         style: 'destructive',
         onPress: () => {
-          const newToDos = { ...toDos };
-          delete newToDos[key];
-          setToDos(newToDos);
-          saveToDos(newToDos);
+          setToDos((prevTodos) => {
+            const newToDos = {
+              ...prevTodos,
+              [key]: {
+                ...prevTodos[key],
+                text: !!prevTodos[key].tempText
+                  ? (prevTodos[key].tempText ?? '')
+                  : prevTodos[key].text,
+                modifying: false,
+              },
+            };
+            saveToDos(newToDos);
+
+            return newToDos;
+          });
         },
       },
     ]);
+  };
+
+  const changeToModifying = (key: string) => {
+    setToDos((prevTodos) => ({
+      ...prevTodos,
+      [key]: { ...prevTodos[key], modifying: !prevTodos[key].modifying },
+    }));
+  };
+
+  const onChangeToDoText = (key: string, text: string) => {
+    setToDos((prevTodos) => ({
+      ...prevTodos,
+      [key]: { ...prevTodos[key], tempText: text },
+    }));
+  };
+
+  const onPressOutToDo = (key: string) => {
+    if (toDos[key].modifying) changeToModifying(key);
   };
 
   return (
@@ -111,12 +191,62 @@ export default function HomeScreen() {
       <ScrollView>
         {Object.keys(toDos).map((key) =>
           toDos[key].working === working ? (
-            <View style={styles.toDo} key={key}>
-              <Text style={styles.toDoText}>{toDos[key].text}</Text>
-              <TouchableOpacity onPress={() => deleteToDo(key)}>
-                <Fontisto name="trash" size={18} color={theme.toDoBg} />
-              </TouchableOpacity>
-            </View>
+            <Pressable
+              style={styles.toDo}
+              key={key}
+              onPressOut={() => onPressOutToDo(key)}
+            >
+              {toDos[key].modifying ? (
+                <TextInput
+                  defaultValue={toDos[key].text}
+                  onChangeText={(text) => onChangeToDoText(key, text)}
+                  value={toDos[key].tempText}
+                  style={{
+                    backgroundColor: 'white',
+                    flex: 1,
+                    borderRadius: 10,
+                    padding: 10,
+                  }}
+                />
+              ) : (
+                <Text
+                  style={{
+                    ...styles.toDoText,
+                    ...(toDos[key].done && {
+                      textDecorationLine: 'line-through',
+                      color: 'gray',
+                    }),
+                  }}
+                >
+                  {toDos[key].text}
+                </Text>
+              )}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: 8,
+                }}
+              >
+                <TouchableOpacity onPress={() => modifyTodo(key)}>
+                  <FontAwesome6 name="eraser" size={20} color={theme.toDoBg} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => completeToDo(key)}>
+                  {toDos[key].done ? (
+                    <MaterialIcons
+                      name="check-box"
+                      size={22}
+                      color={theme.toDoBg}
+                    />
+                  ) : (
+                    <MaterialIcons
+                      name="check-box-outline-blank"
+                      size={22}
+                      color={theme.toDoBg}
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </Pressable>
           ) : null,
         )}
       </ScrollView>
@@ -156,6 +286,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
   },
   toDoText: {
     color: 'white',
